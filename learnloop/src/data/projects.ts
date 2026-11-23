@@ -1,0 +1,170 @@
+import type { Project } from "./types";
+
+const css = (win: string, sel: string, prop: string) =>
+  `(function(){var e=doc.querySelector(${JSON.stringify(sel)});return e&&win.getComputedStyle(e).${prop};})()`;
+
+export const PROJECTS: Project[] = [
+  {
+    id: "profile-card",
+    nodeId: "html",
+    title: "Profile Card",
+    skill: "html",
+    difficulty: 1,
+    minutes: 15,
+    goal: "Build the content of a profile card about yourself using only HTML.",
+    steps: [
+      "Add an <h1> with your name.",
+      "Add an <img> with a src and meaningful alt text.",
+      "Add a <p> describing yourself in a sentence or two.",
+      "Add a link (<a>) to a website, with a real href.",
+    ],
+    starter: {
+      html: "<!-- Build your profile card here -->\n<div class=\"card\">\n  \n</div>",
+      css: "",
+      js: "",
+    },
+    checks: [
+      { id: "h1", label: "Has an <h1> with your name", hint: "Headings use <h1>Your Name</h1>. Make sure it isn't empty.", test: "(function(){var h=doc.querySelector('h1');return !!h&&h.textContent.trim().length>1;})()" },
+      { id: "img", label: "Has an <img> with src and alt", hint: "Images need two attributes: src (where it is) and alt (what it shows). Try <img src=\"https://placehold.co/120\" alt=\"My photo\">.", test: "(function(){var i=doc.querySelector('img');return !!i&&!!i.getAttribute('src')&&(i.getAttribute('alt')||'').trim().length>2;})()" },
+      { id: "p", label: "Has a <p> with a description", hint: "Paragraphs are <p>text</p>. Write at least a short sentence.", test: "(function(){var p=doc.querySelector('p');return !!p&&p.textContent.trim().split(/\\s+/).length>=4;})()" },
+      { id: "a", label: "Has a link with a real href", hint: "Links look like <a href=\"https://example.com\">text</a>. The href must not be empty or just '#'.", test: "(function(){var a=doc.querySelector('a');var h=a&&a.getAttribute('href');return !!h&&h!=='#'&&h.length>3;})()" },
+    ],
+    solutionNote: "A heading, an image with alt text, a paragraph and a link are the four building blocks of most pages.",
+  },
+  {
+    id: "style-card",
+    nodeId: "css",
+    title: "Style the Card",
+    skill: "css",
+    difficulty: 1,
+    minutes: 20,
+    goal: "Make the profile card look like a real card using CSS.",
+    steps: [
+      "Give .card a background color that isn't white or transparent.",
+      "Round the corners with border-radius.",
+      "Add padding so the content breathes.",
+      "Make the heading a different color from the body text.",
+    ],
+    starter: {
+      html: "<div class=\"card\">\n  <h1>Ada Lovelace</h1>\n  <p>Mathematician and the first computer programmer.</p>\n</div>",
+      css: "body { font-family: sans-serif; display: grid; place-items: center; min-height: 100vh; margin: 0; background: #eef; }\n\n.card {\n  /* style me */\n}\n",
+      js: "",
+    },
+    checks: [
+      { id: "bg", label: ".card has a background color", hint: "Use background: #fff3e0; (any color). 'white' and 'transparent' don't count.", test: `(function(){var b=${css("win", ".card", "backgroundColor")};return !!b&&b!=='rgba(0, 0, 0, 0)'&&b!=='rgb(255, 255, 255)';})()` },
+      { id: "radius", label: ".card has rounded corners", hint: "border-radius: 12px; rounds the corners.", test: `(function(){var r=parseFloat(${css("win", ".card", "borderTopLeftRadius")});return r>=4;})()` },
+      { id: "padding", label: ".card has padding", hint: "padding: 24px; adds space between the edge and the content.", test: `(function(){return parseFloat(${css("win", ".card", "paddingTop")})>=12;})()` },
+      { id: "color", label: "Heading color differs from paragraph", hint: "Set h1 { color: ... } to something different from the paragraph.", test: "(function(){var h=doc.querySelector('.card h1'),p=doc.querySelector('.card p');return !!h&&!!p&&win.getComputedStyle(h).color!==win.getComputedStyle(p).color;})()" },
+    ],
+    solutionNote: "Selectors pick elements, properties style them. The browser's DevTools show every computed value.",
+  },
+  {
+    id: "nav-bar",
+    nodeId: "layout",
+    title: "Flexbox Nav Bar",
+    skill: "layout",
+    difficulty: 2,
+    minutes: 25,
+    goal: "Lay out a navigation bar so the logo sits left and links sit on the right.",
+    steps: [
+      "Make <nav> a flex container with display: flex.",
+      "Push the logo and links to opposite ends with justify-content.",
+      "Vertically center items with align-items.",
+      "Add a gap between the links.",
+    ],
+    starter: {
+      html: "<nav>\n  <div class=\"logo\">MySite</div>\n  <ul>\n    <li><a href=\"#\">Home</a></li>\n    <li><a href=\"#\">About</a></li>\n    <li><a href=\"#\">Contact</a></li>\n  </ul>\n</nav>",
+      css: "body { font-family: sans-serif; margin: 0; }\nnav { padding: 12px 24px; background: #222; color: white; }\nul { list-style: none; margin: 0; padding: 0; }\na { color: white; text-decoration: none; }\n",
+      js: "",
+    },
+    checks: [
+      { id: "flex", label: "nav uses display: flex", hint: "Add nav { display: flex; }", test: `${css("win", "nav", "display")}==='flex'` },
+      { id: "space", label: "Logo and links are at opposite ends", hint: "Try justify-content: space-between; on nav.", test: `${css("win", "nav", "justifyContent")}==='space-between'` },
+      { id: "center", label: "Items are vertically centered", hint: "align-items: center; on nav.", test: `${css("win", "nav", "alignItems")}==='center'` },
+      { id: "links-row", label: "Links sit in a row with a gap", hint: "Make ul flex too (display: flex; gap: 16px;).", test: `(function(){var u=doc.querySelector('nav ul');if(!u)return false;var s=win.getComputedStyle(u);return s.display==='flex'&&parseFloat(s.columnGap)>=8;})()` },
+    ],
+    solutionNote: "Flexbox works on one axis. justify-content aligns along it and align-items across it.",
+  },
+  {
+    id: "counter",
+    nodeId: "js",
+    title: "Click Counter",
+    skill: "js",
+    difficulty: 1,
+    minutes: 20,
+    goal: "Make a counter that goes up each time the button is clicked.",
+    steps: [
+      "Store the count in a variable.",
+      "Find the button and the number element with document.querySelector.",
+      "On click, increase the count and update the number on screen.",
+    ],
+    starter: {
+      html: "<div id=\"app\">\n  <h1 id=\"count\">0</h1>\n  <button id=\"inc\">+1</button>\n</div>",
+      css: "body { font-family: sans-serif; text-align: center; padding-top: 60px; }\nbutton { font-size: 1.2rem; padding: 8px 20px; }\n",
+      js: "// Write your JavaScript here\n",
+    },
+    checks: [
+      { id: "initial", label: "Starts at 0", hint: "The #count element should show 0 before any click.", test: "doc.querySelector('#count')&&doc.querySelector('#count').textContent.trim()==='0'" },
+      { id: "click1", label: "One click shows 1", hint: "Inside a click handler: count++ then set #count's textContent to count.", test: "(function(){var b=doc.querySelector('#inc'),c=doc.querySelector('#count');b.click();return c.textContent.trim()==='1';})()" },
+      { id: "click3", label: "Three clicks show 3", hint: "Make sure count is declared outside the handler so it persists between clicks.", test: "(function(){var b=doc.querySelector('#inc'),c=doc.querySelector('#count');b.click();b.click();return c.textContent.trim()==='3';})()" },
+    ],
+    solutionNote: "State (a variable) plus an event handler that updates the screen: that's the heart of every interactive UI.",
+  },
+  {
+    id: "todo",
+    nodeId: "dom",
+    title: "Mini To-Do List",
+    skill: "dom",
+    difficulty: 2,
+    minutes: 35,
+    goal: "Add tasks to a list from an input, and remove them with a click.",
+    steps: [
+      "On clicking #add, read the input value.",
+      "Ignore empty input.",
+      "Create an <li> with the text and append it to #list.",
+      "Clear the input after adding.",
+      "Clicking an item should remove it.",
+    ],
+    starter: {
+      html: "<div id=\"app\">\n  <input id=\"task\" placeholder=\"New task\" />\n  <button id=\"add\">Add</button>\n  <ul id=\"list\"></ul>\n</div>",
+      css: "body { font-family: sans-serif; max-width: 360px; margin: 40px auto; }\nli { cursor: pointer; padding: 6px 0; }\n",
+      js: "// Build the to-do list here\n",
+    },
+    checks: [
+      { id: "add", label: "Adding a task creates an <li>", hint: "Use document.createElement('li'), set textContent, then list.appendChild(li).", test: "(function(){var i=doc.querySelector('#task'),b=doc.querySelector('#add'),l=doc.querySelector('#list');i.value='Buy milk';b.click();return l.children.length===1&&l.textContent.indexOf('Buy milk')>-1;})()" },
+      { id: "clear", label: "Input is cleared after adding", hint: "After appending, set input.value = '';", test: "(function(){var i=doc.querySelector('#task');return i.value==='';})()" },
+      { id: "empty", label: "Empty input is ignored", hint: "At the top of the handler: if (!input.value.trim()) return;", test: "(function(){var i=doc.querySelector('#task'),b=doc.querySelector('#add'),l=doc.querySelector('#list');if(l.children.length<1)return false;var n=l.children.length;i.value='   ';b.click();return l.children.length===n;})()" },
+      { id: "remove", label: "Clicking an item removes it", hint: "Add li.addEventListener('click', () => li.remove());", test: "(function(){var l=doc.querySelector('#list');if(!l.children.length)return false;l.children[0].click();return l.children.length===0;})()" },
+    ],
+    solutionNote: "Create elements, attach them, and listen for events: with those three moves you can build most small UIs.",
+  },
+  {
+    id: "gallery",
+    nodeId: "layout",
+    title: "Responsive Gallery",
+    skill: "layout",
+    difficulty: 3,
+    minutes: 35,
+    goal: "Build a gallery grid that shows 3 columns on desktop and 1 column on narrow screens.",
+    steps: [
+      "Make .gallery a CSS grid.",
+      "Use three equal columns on wide screens.",
+      "Add a gap between tiles.",
+      "Add a media query so narrow screens show a single column.",
+    ],
+    starter: {
+      html: "<div class=\"gallery\">\n  <div class=\"tile\">1</div>\n  <div class=\"tile\">2</div>\n  <div class=\"tile\">3</div>\n  <div class=\"tile\">4</div>\n  <div class=\"tile\">5</div>\n  <div class=\"tile\">6</div>\n</div>",
+      css: "body { font-family: sans-serif; margin: 16px; }\n.tile { background: #cdd; height: 100px; display: grid; place-items: center; border-radius: 8px; }\n",
+      js: "",
+    },
+    checks: [
+      { id: "grid", label: ".gallery is a grid", hint: ".gallery { display: grid; }", test: `${css("win", ".gallery", "display")}==='grid'` },
+      { id: "cols", label: "Three columns on desktop", hint: "grid-template-columns: repeat(3, 1fr);", test: `(function(){var c=${css("win", ".gallery", "gridTemplateColumns")};return !!c&&c.split(' ').length===3;})()` },
+      { id: "gap", label: "Tiles have a gap", hint: "gap: 16px;", test: `(function(){return parseFloat(${css("win", ".gallery", "rowGap")})>=8;})()` },
+      { id: "media", label: "A @media query exists", hint: "Add @media (max-width: 600px) { .gallery { grid-template-columns: 1fr; } }", test: "(function(){var found=false;[].forEach.call(doc.styleSheets,function(s){try{[].forEach.call(s.cssRules,function(r){if(r.type===4)found=true;});}catch(e){}});return found;})()" },
+    ],
+    solutionNote: "Grid handles two dimensions; media queries let the same HTML adapt to any screen.",
+  },
+];
+
+export const projectById = (id: string) => PROJECTS.find((p) => p.id === id)!;
