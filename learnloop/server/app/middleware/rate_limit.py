@@ -6,6 +6,7 @@ from collections import defaultdict, deque
 from starlette.types import ASGIApp, Receive, Scope, Send
 
 from app.core.context import request_id_ctx
+from app.core.net import client_ip
 
 AUTH_PATH_PREFIX = "/api/v1/auth/"
 _STRICT_AUTH_PATHS = ("/api/v1/auth/login", "/api/v1/auth/register")
@@ -19,8 +20,9 @@ class RateLimitMiddleware:
     instances, move them to a shared store (the pattern here stays the same).
     """
 
-    def __init__(self, app: ASGIApp, *, per_minute: int, auth_per_minute: int) -> None:
+    def __init__(self, app: ASGIApp, *, per_minute: int, auth_per_minute: int, proxy_hops: int = 0) -> None:
         self.app = app
+        self.proxy_hops = proxy_hops
         self.per_minute = per_minute
         self.auth_per_minute = auth_per_minute
         self._hits: dict[str, deque[float]] = defaultdict(deque)
@@ -39,7 +41,7 @@ class RateLimitMiddleware:
         if scope["type"] != "http" or scope["method"] == "OPTIONS" or not scope["path"].startswith("/api/"):
             await self.app(scope, receive, send)
             return
-        ip = (scope.get("client") or ("anon", 0))[0]
+        ip = client_ip(scope, self.proxy_hops)
         now = time.monotonic()
         path = scope["path"]
         wait = self._allow(f"all:{ip}", self.per_minute, now)

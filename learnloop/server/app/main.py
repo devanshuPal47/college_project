@@ -54,14 +54,15 @@ def create_app() -> FastAPI:
 
     # Middleware runs outermost-first in REVERSE order of registration:
     # request-id -> CORS -> access log -> security headers -> rate limit -> routes
-    app.add_middleware(RateLimitMiddleware, per_minute=s.rate_limit_per_minute, auth_per_minute=s.auth_rate_limit_per_minute)
+    app.add_middleware(RateLimitMiddleware, per_minute=s.rate_limit_per_minute, auth_per_minute=s.auth_rate_limit_per_minute, proxy_hops=s.trusted_proxy_hops)
     app.add_middleware(SecurityHeadersMiddleware, hsts=s.is_production)
-    app.add_middleware(AccessLogMiddleware)
+    app.add_middleware(AccessLogMiddleware, proxy_hops=s.trusted_proxy_hops)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=s.cors_origins,
+        allow_origins=s.cors_origin_list,
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
         allow_headers=["Authorization", "Content-Type", "X-Request-ID"],
+        max_age=86400,  # browsers cache the CORS preflight for a day: one OPTIONS, not one per API call
         expose_headers=["X-Request-ID", "Retry-After"],
     )
     app.add_middleware(RequestIdMiddleware)

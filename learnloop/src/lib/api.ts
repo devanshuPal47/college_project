@@ -1,7 +1,25 @@
 /** Typed fetch client for the LearnLoop API: bearer auth, single-flight token refresh, one error shape. */
 
-const BASE = "/api/v1";
-const REQUEST_TIMEOUT_MS = 20_000;
+// In development the Vite proxy forwards /api to the local API, so the base is empty. In production the static site
+// and the API live on different Render URLs, so the build sets VITE_API_URL (e.g. https://learnloop-api.onrender.com).
+const API_ORIGIN = ((import.meta.env.VITE_API_URL as string | undefined) ?? "").trim().replace(/\/+$/, "");
+const BASE = `${API_ORIGIN}/api/v1`;
+// Free hosting puts the API to sleep when idle and a cold start can take ~a minute, so don't give up early.
+const REQUEST_TIMEOUT_MS = 60_000;
+const SLOW_AFTER_MS = 4_000;
+
+// --- "the server is waking up" signal, shown as a banner by <ServerWaking /> --------------------------------
+let slowCount = 0;
+const slowListeners = new Set<() => void>();
+export const subscribeSlow = (fn: () => void) => {
+  slowListeners.add(fn);
+  return () => void slowListeners.delete(fn);
+};
+export const isServerSlow = () => slowCount > 0;
+const notifySlow = () => slowListeners.forEach((fn) => fn());
+
+/** Fire-and-forget request that wakes a sleeping free-tier API while the visitor is still reading the page. */
+export const warmUp = () => void fetch(`${BASE}/health`, { cache: "no-store" }).catch(() => {});
 const TOKEN_KEY = "learnloop.session";
 
 export type Tokens = { access_token: string; refresh_token: string; expires_in: number };
@@ -71,6 +89,17 @@ function refreshTokens(): Promise<boolean> {
 }
 
 export async function request<T>(path: string, opts: Opts = {}): Promise<T> {
+  const slowTimer = setTimeout(() => { slowCount++; notifySlow(); flagged = true; }, SLOW_AFTER_MS);
+  let flagged = false;
+  try {
+    return await doRequest<T>(path, opts);
+  } finally {
+    clearTimeout(slowTimer);
+    if (flagged) { slowCount--; notifySlow(); }
+  }
+}
+
+async function doRequest<T>(path: string, opts: Opts): Promise<T> {
   const { method = "GET", body, auth = true, keepalive } = opts;
   const send = () => {
     const headers: Record<string, string> = {};

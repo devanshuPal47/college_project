@@ -16,7 +16,9 @@
     "db:current": "server\\.venv\\Scripts\\python.exe -m alembic -c server/alembic.ini current",
     "test:api": "server\\.venv\\Scripts\\python.exe -m pytest server/tests -q",
     "db:reset": "server\\.venv\\Scripts\\python.exe server/scripts/reset_db.py",
-    "db:check": "server\\.venv\\Scripts\\python.exe server/scripts/db_check.py"
+    "db:check": "server\\.venv\\Scripts\\python.exe server/scripts/db_check.py",
+    "smoke": "server\\.venv\\Scripts\\python.exe server/scripts/smoke_live.py",
+    "set-password": "server\\.venv\\Scripts\\python.exe server/scripts/set_password.py"
   },
   "dependencies": {
     "@codemirror/lang-css": "^6.3.0",

@@ -3,14 +3,17 @@ import time
 
 from starlette.types import ASGIApp, Message, Receive, Scope, Send
 
+from app.core.net import client_ip
+
 logger = logging.getLogger("app.access")
 
 
 class AccessLogMiddleware:
     """One structured line per request: method, path, status, duration, client."""
 
-    def __init__(self, app: ASGIApp) -> None:
+    def __init__(self, app: ASGIApp, *, proxy_hops: int = 0) -> None:
         self.app = app
+        self.proxy_hops = proxy_hops
 
     async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
         if scope["type"] != "http":
@@ -29,6 +32,5 @@ class AccessLogMiddleware:
             await self.app(scope, receive, capture)
         finally:
             ms = (time.perf_counter() - start) * 1000
-            client = scope.get("client") or ("-", 0)
             level = logging.WARNING if status >= 500 else logging.INFO
-            logger.log(level, "%s %s -> %s in %.0fms (ip=%s)", scope["method"], scope["path"], status, ms, client[0])
+            logger.log(level, "%s %s -> %s in %.0fms (ip=%s)", scope["method"], scope["path"], status, ms, client_ip(scope, self.proxy_hops))

@@ -1,0 +1,69 @@
+# Render Blueprint: two services from one repo.
+#   learnloop-api  FastAPI backend (Python web service), talks to Supabase Postgres through the pooler
+#   learnloop-web  Vite/React frontend (static site, served from Render's CDN, never sleeps)
+# Dashboard: New + > Blueprint > pick this repo. Render then asks for every variable marked `sync: false`.
+# Step by step instructions: DEPLOY.md
+
+services:
+  # ------------------------------------------------------------------------------------------ backend
+  - type: web
+    name: learnloop-api
+    runtime: python
+    plan: free
+    region: singapore # closest Render region to the Supabase project (Seoul)
+    buildCommand: pip install -r server/requirements.txt
+    # Apply database migrations, then serve. `&&` means a failed migration stops the deploy instead of serving a broken schema.
+    startCommand: python -m alembic -c server/alembic.ini upgrade head && uvicorn app.main:app --app-dir server --host 0.0.0.0 --port $PORT --no-access-log
+    healthCheckPath: /api/v1/health
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.10
+      - key: APP_ENV
+        value: production # hides /api/docs and turns on HSTS
+      - key: TRUSTED_PROXY_HOPS
+        value: "1" # Render's proxy sits in front: read the real client IP from X-Forwarded-For (see DEPLOY.md)
+      - key: RATE_LIMIT_PER_MINUTE
+        value: "600"
+      - key: AUTH_RATE_LIMIT_PER_MINUTE
+        value: "30" # per IP; each ACCOUNT is additionally locked after 5 wrong passwords
+      - key: AI_DAILY_QUOTA
+        value: "40"
+      - key: GROQ_CHAT_MODEL
+        value: openai/gpt-oss-20b
+      - key: GROQ_FEEDBACK_MODEL
+        value: openai/gpt-oss-120b
+      - key: JWT_SECRET
+        generateValue: true # a fresh random secret for production, never the one used locally
+      - key: DATABASE_URL
+        sync: false # Supabase *Session pooler* URL, password URL-encoded (@ -> %40)
+      - key: GROQ_API_KEY
+        sync: false
+      # Optional: ADMIN_EMAIL + ADMIN_PASSWORD create a first admin on a FRESH database. Not needed when an admin already exists.
+      - key: CORS_ORIGINS
+        sync: false # the exact URL of learnloop-web, e.g. https://learnloop-web.onrender.com (no trailing slash)
+
+  # ----------------------------------------------------------------------------------------- frontend
+  - type: web
+    name: learnloop-web
+    runtime: static
+    buildCommand: npm ci && npm run build
+    staticPublishPath: ./dist
+    autoDeploy: true
+    envVars:
+      - key: VITE_API_URL
+        sync: false # the exact URL of learnloop-api, e.g. https://learnloop-api.onrender.com (no trailing slash)
+    # The app uses hash routing (#/project/...), so no SPA rewrite rule is needed.
+    headers:
+      - path: /*
+        name: X-Content-Type-Options
+        value: nosniff
+      - path: /*
+        name: X-Frame-Options
+        value: DENY
+      - path: /*
+        name: Referrer-Policy
+        value: strict-origin-when-cross-origin
+      - path: /assets/*
+        name: Cache-Control
+        value: public, max-age=31536000, immutable

@@ -26,6 +26,10 @@ Separately: `npm run dev:api` (API in the venv) and `npm run dev:web`.
 | `npm run db:current` | Show the applied revision |
 | `npm run test:api` | Backend tests (DB-backed tests run against Supabase) |
 
+## Deploy
+
+See **[DEPLOY.md](DEPLOY.md)** for the exact Render steps (`render.yaml` defines both services). After deploying: `npm run smoke -- --api <api-url> --web <web-url>`.
+
 ## Backend layout (`server/app`)
 
 ```

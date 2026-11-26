@@ -15,7 +15,10 @@ class Settings(BaseSettings):
     # --- runtime ---
     app_env: Literal["development", "production", "test"] = "development"
     log_level: str = "INFO"
-    cors_origins: list[str] = ["http://localhost:5173", "http://127.0.0.1:5173"]
+    # comma-separated list of allowed browser origins (your deployed frontend URL(s), no trailing slash)
+    cors_origins: str = "http://localhost:5173,http://127.0.0.1:5173"
+    # how many reverse proxies sit in front of this app (0 = none/dev, 1 = Render). Used to find the real client IP.
+    trusted_proxy_hops: int = 0
 
     # --- database (Supabase Postgres via the connection pooler) ---
     database_url: str
@@ -53,6 +56,10 @@ class Settings(BaseSettings):
         if not v.startswith("postgresql+psycopg://"):
             raise ValueError("DATABASE_URL must be a PostgreSQL URL (this project does not use local databases)")
         return v
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        return [o.strip().rstrip("/") for o in self.cors_origins.split(",") if o.strip()]
 
     @property
     def is_production(self) -> bool:
